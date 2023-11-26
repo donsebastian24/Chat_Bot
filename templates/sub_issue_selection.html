@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sub-Issue Selection</title>
+</head>
+<body>
+    <h2>Select the specific issue:</h2>
+    <form action="/sub_process/{{ user_key }}" method="post">
+        <label for="sub_issue">Sub-Issue:</label>
+        {% if issue_type == 'network' %}
+            <select id="sub_issue" name="sub_issue" required>
+                <option value="wifi">Wi-Fi Connection Problems</option>
+                <option value="vpn">VPN Issues</option>
+                <option value="speed">Slow Internet Speed</option>
+                <option value="other_network">Other Network Issues</option>
+            </select><br>
+        {% elif issue_type == 'system' %}
+            <!-- Add options for system issues -->
+        {% elif issue_type == 'installation' %}
+            <!-- Add options for software installation issues -->
+        {% elif issue_type == 'hardware' %}
+            <!-- Add options for hardware problems -->
+        {% elif issue_type == 'other' %}
+            <!-- Add options for other issues -->
+        {% endif %}
+        <input type="submit" value="Next">
+    </form>
+</body>
+</html>

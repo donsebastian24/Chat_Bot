@@ -6,7 +6,7 @@ pipeline {
 	stages {
 		stage('Build Docker image') { 
 			steps {
-				sh 'docker build -t don2421/chatbot:$BUILD_NUMBER .
+				sh 'docker build -t don2421/chatbot:$BUILD_NUMBER' .
 			}
 		}
 		stage('login to dockerhub') {

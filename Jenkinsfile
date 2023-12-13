@@ -1,109 +1,29 @@
-pipeline{
-
-    agent any
-
-    stages{
-
-        stage(‘Start’){
-
-            steps{
-
-                echo ‘Start the Pipeline’
-
-                }
-
-            }
-
-        stage(‘Clean phase Starts’){
-
-            steps{
-
-                echo ‘Start the Clean phase’
-
-                }
-
-            }
-
-        stage(‘Clean’){
-
-            steps{
-
-                sh ‘mvn clean’
-
-                }
-
-            }
-
-        stage(‘Compile phase Starts’){
-
-            steps{
-
-                echo ‘Start the Compile phase’
-
-                }
-
-            }
-
-        stage(‘Compile’){
-
-            steps{
-
-                sh ‘mvn compile’
-
-                }
-
-            }
-
-        stage(‘Test phase Starts’){
-
-            steps{
-
-                echo ‘Start the Test phase’
-
-                }
-
-            }
-
-        stage(‘Test’){
-
-            steps{
-
-                sh ‘mvn test’
-
-                }
-
-            }
-
-        stage(‘Install phase Starts’){
-
-            steps{
-
-                echo ‘Start the Instll phase’
-
-                }
-
-            }
-
-        stage(‘Install’){
-
-            steps{
-
-                sh ‘mvn install’
-
-                }
-
-            }
-
-        stage(‘End’){
-
-            steps{
-
-                echo ‘End the pipeline’
-
-                }
-
-            }
-
-    }
-
+pipeline {
+	agent any
+	environment {
+	DOCKERHUB_CREDENTIALS = credentials('Docker')
+	}
+	stages('Build Docker image') {
+		steps {
+			sh 'docker build -t don2421/chatbot:$BUILD_NUMBER .
+		}
+	}
+	stage('login to dockerhub') {
+		steps{
+			sh 'echo $DOCKERHUB_CREDENTIALS_PSM | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+		}
+	}
+	stage('push image') {
+		steps{
+			sh 'docker push don2421/chatbot:$BUILD_NUMBER'
+		}
+	}
 }
+post {
+	always {
+		sh 'docker logout'
+	}
+     
+}
+			
+	

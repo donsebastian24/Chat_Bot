@@ -1,42 +1,48 @@
 pipeline {
     agent any
-    environment {
-        DOCKERHUB_CREDENTIALS = credentials('Docker')
-    }
+
     stages {
+        stage('Checkout') {
+            steps {
+                // This will checkout your repo
+                git 'https://github.com/donsebastian24/devfest.git'
+            }
+        }
 
-        stage('login to dockerhub') {
-            steps{
+        stage('Build Docker Image') {
+            steps {
                 script {
-                    sh 'echo $DOCKERHUB_CREDENTIALS_PSM | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+                    // This will build your Docker image
+                    dockerImage = docker.build "chatbot$BUILD_NUMBER"
                 }
             }
         }
-        stage('cloning Git'){
-            steps {
-                checkout([$class: 'GitSCM', branches: [[name: '*/main']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: []])
 
-                }
-            }
-        stage('Build Docker image') {
+        stage('Push Docker Image') {
             steps {
                 script {
-                    sh 'docker build -t don2421/chatbot:$BUILD_NUMBER .'
+                    // This will push your Docker image to Docker Hub
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'don2421', passwordVariable: 'Vandananickal@2421')]) {
+                        docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials') {
+                            dockerImage.push("Project")
+                        }
+                    }
                 }
             }
         }
-        stage('push image') {
-            steps{
+
+        stage('Deploy to AWS') {
+            steps {
                 script {
-                    sh 'docker push don2421/chatbot:$BUILD_NUMBER'
+                    // This will deploy your Docker image to an AWS instance
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'aws-credentials', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                        sh '''
+                        aws ecs register-task-definition --cli-input-json file://task-definition.json
+                        aws ecs update-service --service your-service --task-definition your-task-definition --cluster your-cluster
+                        '''
+                    }
                 }
             }
         }
     }
-
-
 }
-
-
-
-

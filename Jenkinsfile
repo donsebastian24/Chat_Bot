@@ -13,7 +13,7 @@ pipeline {
             steps {
                 script {
                     // This will build your Docker image
-                    dockerImage = docker.build "chatbot$BUILD_NUMBER"
+                    dockerImage = docker.build "chatbot"
                 }
             }
         }

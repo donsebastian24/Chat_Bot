@@ -5,7 +5,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 // This will checkout your repo
-                git 'https://github.com/donsebastian24/Chat_Bot.git'
+                git branch: 'main', url: 'https://github.com/donsebastian24/Chat_Bot.git'
             }
         }
 

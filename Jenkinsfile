@@ -14,7 +14,8 @@ node {
         }
         stage('cloning Git'){
             steps {
-                checkout([$class: 'GitSCM', branches: [[name: '*/main']], doGenerateSubmoduleConfigurations: false.extensions[].submoduleCfg:[].
+                checkout([$class: 'GitSCM', branches: [[name: '*/main']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: []])
+
                 }
             }
         stage('Build Docker image') {

@@ -1,6 +1,9 @@
 pipeline {
     agent any
-
+        environment {
+            DOCKERHUB_USERNAME = 'don2421'
+            DOCKERHUB_PASSWORD = 'Vandananickal@2421'
+        }
     stages {
         stage('Checkout') {
             steps {
@@ -9,11 +12,20 @@ pipeline {
             }
         }
 
+        stage('cloning Git'){
+            steps {
+                checkout([$class: 'GitSCM', branches: [[name: '*/main']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: []])
+
+                }
+            }
+
         stage('Build Docker Image') {
             steps {
                 script {
                     // This will build your Docker image
-                    dockerImage = docker.build "chatbot"
+
+                    sh 'docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD'
+                    sh 'docker build -t don2421/chatbot:$BUILD_NUMBER .'
                 }
             }
         }
@@ -46,3 +58,8 @@ pipeline {
         }
     }
 }
+
+
+
+
+

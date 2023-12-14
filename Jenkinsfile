@@ -33,6 +33,8 @@ pipeline {
             }
         }
     }
+    node('any') {
+    // some block
     post {
         always {
             script {
@@ -40,6 +42,8 @@ pipeline {
             }
         }
     }
+}
+
 
 }
 

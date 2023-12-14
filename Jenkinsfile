@@ -1,22 +1,11 @@
 pipeline {
     agent any
-         environment {
 
-        DOCKERHUB_CREDENTIALS = credentials('Docker')
-        }
     stages {
         stage('Checkout') {
             steps {
                 // This will checkout your repo
                 git branch: 'main', url: 'https://github.com/donsebastian24/Chat_Bot.git'
-            }
-        }
-
-        stage('login to dockerhub') {
-            steps{
-                script {
-                    sh 'docker login -u don2421 --password-stdin'
-                }
             }
         }
 

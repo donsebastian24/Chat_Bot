@@ -33,7 +33,7 @@ pipeline {
             }
         }
     }
-    node('any') {
+    node('label') {
     // some block
     post {
         always {

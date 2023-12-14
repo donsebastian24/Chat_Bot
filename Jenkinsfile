@@ -33,17 +33,6 @@ pipeline {
             }
         }
     }
-    node('label') {
-    // some block
-    post {
-        always {
-            script {
-                sh 'docker logout'
-                 }
-             }
-         }
-    }
-}
 
 
 }

@@ -1,4 +1,4 @@
-pipeline {
+node {
     agent any
     environment {
         DOCKERHUB_CREDENTIALS = credentials('Docker')
@@ -12,6 +12,11 @@ pipeline {
                 }
             }
         }
+        stage('cloning Git'){
+            steps {
+                checkout([$class: 'GitSCM', branches: [[name: '*/main']], doGenerateSubmoduleConfigurations: false.extensions[].submoduleCfg:[].
+                }
+            }
         stage('Build Docker image') {
             steps {
                 script {
@@ -36,3 +41,7 @@ pipeline {
     }
 
 }
+
+
+
+

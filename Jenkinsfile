@@ -5,7 +5,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 // This will checkout your repo
-                git 'https://github.com/donsebastian24/devfest.git'
+                git 'https://github.com/donsebastian24/Chat_Bot.git'
             }
         }
 

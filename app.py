@@ -1,110 +1,135 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, g, jsonify, session
+from nltk.chat.util import Chat, reflections
+import random
+import sqlite3
 
 app = Flask(__name__)
+chat = Chat([
+    # Define your chat pairs here based on the menu options
+    # Each menu option will have its own response patterns
+], reflections)
 
-# Sample dictionary to store user data and tickets
-users_data = {}
+# This dictionary will store the tickets
+tickets = {}
 
+# This variable will track the state of the conversation
+state = 'ASKING'
 
-@app.route('/')
-def greeting():
-    return render_template('index.html')
-
-
-@app.route('/chat', methods=['GET', 'POST'])
-def chat():
-    if request.method == 'POST':
-        employee_number = request.form['employee_number']
-        email = request.form['email']
-        mobile_number = request.form['mobile_number']
-
-        # Basic input validation
-        if not (employee_number and email and mobile_number):
-            return "Please provide all required information."
-
-        # Store user data
-        user_key = f"{employee_number}-{email}"
-        users_data[user_key] = {'employee_number': employee_number,
-                                'email': email,
-                                'mobile_number': mobile_number,
-                                'issue_type': None,
-                                'sub_issue': None,
-                                'problem_description': None,
-                                'suggested_solutions': None}
-
-        return render_template('issue_selection.html', user_key=user_key)
-
-    return render_template('greeting.html')
+MENU_OPTIONS = [
+    "My computer/system/laptop is slow or lagging",
+    "I can't print or printer not working",
+    "I can't connect to the network or no internet",
+    "My screen/monitor/display is blank or black",
+    "I can't log in or login issue or forgot password",
+    "I received an error message",
+    "How to install software",
+    "Email/Outlook/Mailbox not working",
+]
 
 
-@app.route('/process/<user_key>', methods=['POST'])
-def process(user_key):
-    user_data = users_data.get(user_key)
-
-    if not user_data:
-        return "Invalid user key."
-
-    issue_type = request.form['issue_type']
-    user_data['issue_type'] = issue_type
-
-    return render_template('sub_issue_selection.html', user_key=user_key, issue_type=issue_type)
+def get_db():
+    db = getattr(g, '_database', None)
+    if db is None:
+        db = g._database = sqlite3.connect('tickets.db')
+    return db
 
 
-@app.route('/sub_process/<user_key>', methods=['POST'])
-def sub_process(user_key):
-    user_data = users_data.get(user_key)
-
-    if not user_data:
-        return "Invalid user key."
-
-    sub_issue = request.form['sub_issue']
-    user_data['sub_issue'] = sub_issue
-
-    return render_template('problem_description.html', user_key=user_key)
-
-
-@app.route('/solution/<user_key>', methods=['POST'])
-def solution(user_key):
-    user_data = users_data.get(user_key)
-
-    if not user_data:
-        return "Invalid user key."
-
-    problem_description = request.form['problem_description']
-    user_data['problem_description'] = problem_description
-
-    # Sample logic to suggest solutions based on the issue
-    suggested_solutions = ["Check if it's plugged in", "Restart the device", "Contact IT support"]
-    user_data['suggested_solutions'] = suggested_solutions
-
-    return render_template('suggested_solution.html', user_key=user_key, solutions=suggested_solutions)
+def get_troubleshooting_suggestions(issue):
+    # Sample troubleshooting suggestions
+    troubleshooting_dict = {
+        "My computer/system/laptop is slow or lagging": [
+            "Close unnecessary background applications.",
+            "Check for malware or viruses using an antivirus program.",
+            "Upgrade your computer's RAM for better performance.",
+        ],
+        # Add troubleshooting suggestions for other issues
+    }
+    return "\n".join(troubleshooting_dict.get(issue, ["No suggestions available."]))
 
 
-@app.route('/follow_up/<user_key>', methods=['POST'])
-def follow_up(user_key):
-    user_data = users_data.get(user_key)
-
-    if not user_data:
-        return "Invalid user key."
-
-    return render_template('follow_up.html', user_key=user_key)
+@app.teardown_appcontext
+def close_connection(exception):
+    db = getattr(g, '_database', None)
+    if db is not None:
+        db.close()
 
 
-@app.route('/escalate/<user_key>', methods=['POST'])
-def escalate(user_key):
-    user_data = users_data.get(user_key)
-
-    if not user_data:
-        return "Invalid user key."
-
-    # Sample logic to create a ticket
-    ticket_number = "T123"
-    user_data['ticket_number'] = ticket_number
-
-    return render_template('ticket_submission.html', user_key=user_key, ticket_number=ticket_number)
+@app.route("/")
+def home():
+    return render_template("index.html")
 
 
+@app.route("/reset")
+def reset():
+    session.clear()
+    return "Session has been reset"
 
 
-if __name__ == '__main__':
+@app.route("/get")
+def get_bot_response():
+    global state
+    user_text = request.args.get('msg')
+    db = get_db()
+    cursor = db.cursor()
+    response_message = ""
+
+    if state == 'ASKING' or state == 'START':
+        state = 'MENU_SELECTED'
+        # Present the menu options
+        menu_prompt = "Please select your IT issue from the menu:\n" + "\n".join(
+            [f"{i + 1}. {option}" for i, option in enumerate(MENU_OPTIONS)])
+        response_message = menu_prompt
+    elif state == 'MENU_SELECTED':
+        try:
+            selected_option = int(user_text)
+            if 1 <= selected_option <= len(MENU_OPTIONS):
+                selected_issue = MENU_OPTIONS[selected_option - 1]
+
+                # Provide troubleshooting suggestions based on the selected issue
+                troubleshooting_suggestions = get_troubleshooting_suggestions(selected_issue)
+                response_message = f"Thank you for selecting '{selected_issue}'. Here are some troubleshooting suggestions:\n\n{troubleshooting_suggestions}\n\nDid these suggestions help resolve your issue? (yes/no)"
+                state = 'FEEDBACK'
+            else:
+                response_message = "Invalid selection. Please choose a valid option from the menu."
+        except ValueError:
+            response_message = "Invalid input. Please enter the number corresponding to your selected option."
+    elif state == 'FEEDBACK':
+        if "yes" in user_text:
+            state = 'ASKING'
+            response_message = "Great! If you have any other issues, feel free to ask. You can also contact our support team for further assistance. Thank you!"
+        elif "no" in user_text:
+            state = 'DETAILS'
+            response_message = "I'm sorry to hear that. Could you please provide more details about the issue?"
+    elif state == 'DETAILS':
+        # The user is providing more details about their issue
+        # Generate a unique ticket number
+        ticket_number = random.randint(1000, 9999)
+        # Store the ticket information in the database
+        cursor.execute("INSERT INTO tickets VALUES (?, ?)", (ticket_number, user_text))
+        db.commit()
+        # Reset the state
+        state = 'ASKING'
+        # Provide the ticket number to the user
+        response_message = f"Your support ticket has been raised. Your ticket number is {ticket_number}. One of our support team members will reach out to you soon. Thanks for using our service."
+
+
+    elif "reset" in user_text.lower():
+
+        state = 'START'  # Reset the state to 'START' here
+
+        response_message = "The chat has been reset. How can I assist you today? Please start a new conversation."
+
+        print(response_message)
+        # Add the welcoming message here
+
+        response_message += "\n\nWelcome! I'm your IT Support Bot, ready to assist you. To kick off our chat, simply send a friendly 'Hi'. How can I help you today?"
+    else:
+        # Provide a default response for unrecognized inputs
+        response_message = "I'm here to assist you. If you have a specific IT issue, please choose the appropriate option from the menu or provide more details so I can help you effectively."
+
+    # Display the response on the chat screen
+    return jsonify({"response": response_message})
+
+
+if __name__ == "__main__":
     app.run(debug=True)
